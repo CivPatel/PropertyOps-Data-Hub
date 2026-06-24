@@ -1,0 +1,5 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/PropertyOps.Api/PropertyOps.Api.csproj" />
+  </Folder>
+</Solution>
