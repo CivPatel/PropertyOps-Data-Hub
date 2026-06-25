@@ -57,3 +57,33 @@ Dtos/PropertyDtos.cs
 ADD CONTROLLER
 
 Controllers/PropertiesController.cs
+
+
+STEP 6
+
+PROGRAM.CS 
+
+
+STEP 7
+
+dotnet ef migrations add InitialCreate 
+dotnet ef database update
+
+STEP 8
+
+RUN
+dotnet run --urls http://localhost:5079
+
+CHECK BROWSER
+http://localhost:5079/scalar/v1
+http://localhost:5079/health
+
+CHECK ENDPOINTS 
+GET /health
+GET /api/properties
+GET /api/properties/1
+POST /api/properties
+
+STEP 9
+
+dotnet build 

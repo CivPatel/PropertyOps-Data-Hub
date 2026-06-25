@@ -157,3 +157,4 @@
 /Users/shivpatel/Desktop/propertyops-data-hub/src/PropertyOps.Api/obj/Debug/net10.0/PropertyOps.Api.pdb
 /Users/shivpatel/Desktop/propertyops-data-hub/src/PropertyOps.Api/obj/Debug/net10.0/PropertyOps.Api.genruntimeconfig.cache
 /Users/shivpatel/Desktop/propertyops-data-hub/src/PropertyOps.Api/obj/Debug/net10.0/ref/PropertyOps.Api.dll
+/Users/shivpatel/Desktop/propertyops-data-hub/src/PropertyOps.Api/obj/Debug/net10.0/PropertyOps.Api.sourcelink.json

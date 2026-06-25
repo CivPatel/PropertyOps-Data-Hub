@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using PropertyOps.Api.Data;
 using Scalar.AspNetCore;
+using PropertyOps.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,6 +17,8 @@ builder.Services.AddDbContext<PropertyOpsDbContext>(options =>
         )
     )
 );
+
+builder.Services.AddScoped<LeasingIngestionService>();  // why????????
 
 var app = builder.Build();
 
