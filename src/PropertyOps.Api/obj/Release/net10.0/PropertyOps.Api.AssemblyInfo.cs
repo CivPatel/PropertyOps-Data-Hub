@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("PropertyOps.Api")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+80c9251388420bd89f36234fb78eef3f7c5162b8")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+53ece80fb67e95eecf0a45c3a7836621dfa1bf11")]
 [assembly: System.Reflection.AssemblyProductAttribute("PropertyOps.Api")]
 [assembly: System.Reflection.AssemblyTitleAttribute("PropertyOps.Api")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
