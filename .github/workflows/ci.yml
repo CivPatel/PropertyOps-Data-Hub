@@ -20,10 +20,10 @@ jobs:
           dotnet-version: "10.0.x"
 
       - name: Restore dependencies
-        run: dotnet restore PropertyOps.DataHub.sln
+        run: dotnet restore PropertyOps.DataHub.slnx
 
       - name: Build solution
-        run: dotnet build PropertyOps.DataHub.sln --configuration Release --no-restore
+        run: dotnet build PropertyOps.DataHub.slnx --configuration Release --no-restore
 
       - name: Run tests
-        run: dotnet test PropertyOps.DataHub.sln --configuration Release --no-build --verbosity normal
+        run: dotnet test PropertyOps.DataHub.slnx --configuration Release --no-build --verbosity normal
