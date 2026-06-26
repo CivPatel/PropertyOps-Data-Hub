@@ -1,5 +1,6 @@
 services:
   sqlserver:
+    platform: linux/amd64
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: propertyops-sql
     environment:
@@ -9,6 +10,19 @@ services:
       - "1433:1433"
     volumes:
       - propertyops_sql_data:/var/opt/mssql
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: propertyops-api
+    depends_on:
+      - sqlserver
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__PropertyOpsDatabase: "Server=sqlserver,1433;Database=PropertyOpsHubDb;User Id=sa;Password=${SQL_SA_PASSWORD};TrustServerCertificate=True;Encrypt=False"
+    ports:
+      - "8080:8080"
 
 volumes:
   propertyops_sql_data:
