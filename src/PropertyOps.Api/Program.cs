@@ -65,8 +65,13 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<PropertyOpsDbContext>();
 
-    await db.Database.MigrateAsync();
-    await DbInitializer.SeedAsync(db);
+    var retryStrategy = db.Database.CreateExecutionStrategy();
+
+    await retryStrategy.ExecuteAsync(async () =>
+    {
+        await db.Database.MigrateAsync();
+        await DbInitializer.SeedAsync(db);
+    });
 }
 
 app.Run();
