@@ -14,6 +14,11 @@ builder.Services.AddDbContext<PropertyOpsDbContext>(options =>
         builder.Configuration.GetConnectionString("PropertyOpsDatabase")
         ?? throw new InvalidOperationException(
             "Connection string 'PropertyOpsDatabase' was not found."
+        ),
+        sqlOptions => sqlOptions.EnableRetryOnFailure(
+            maxRetryCount: 8,
+            maxRetryDelay: TimeSpan.FromSeconds(15),
+            errorNumbersToAdd: null
         )
     )
 );
