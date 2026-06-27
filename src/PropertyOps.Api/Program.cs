@@ -7,7 +7,9 @@ using OpenAI.Chat;
 var builder = WebApplication.CreateBuilder(args);
 const string DashboardCorsPolicy = "DashboardClient";
 
+builder.Services.AddScoped<AiCorrectionService>();
 builder.Services.AddControllers();
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(DashboardCorsPolicy, policy => //add react 

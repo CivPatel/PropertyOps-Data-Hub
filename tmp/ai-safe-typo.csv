@@ -1,0 +1,2 @@
+externalLeaseId,propertyCode,unitNumber,residentName,monthlyRent,status,leaseStartDate,leaseEndDate,moveInDate,moveOutDate
+LEASE-AI-2001,BAYOU001,121,Demo Tenant,1600.00,Active,2026-01-01,2026-12-31,2026-01-01,

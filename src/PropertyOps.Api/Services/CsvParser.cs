@@ -29,7 +29,7 @@ public static class CsvParser
         return rows;
     }
 
-    private static List<string> ParseLine(string line)
+    public static List<string> ParseLine(string line)
     {
         var values = new List<string>();
         var currentValue = new StringBuilder();

@@ -17,4 +17,6 @@ public class DataQualityError
     public string? RawData { get; set; }
 
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+    public ICollection<CorrectionSuggestion> CorrectionSuggestions { get; set; }
+    = new List<CorrectionSuggestion>();
 }

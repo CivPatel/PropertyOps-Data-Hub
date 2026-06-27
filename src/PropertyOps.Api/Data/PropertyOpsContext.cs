@@ -10,6 +10,8 @@ public class PropertyOpsDbContext : DbContext
     {
     }
 
+    public DbSet<CorrectionSuggestion> CorrectionSuggestions
+    => Set<CorrectionSuggestion>();
     public DbSet<Property> Properties => Set<Property>();
     public DbSet<Lease> Leases => Set<Lease>();
     public DbSet<ConstructionProject> ConstructionProjects => Set<ConstructionProject>();
@@ -89,7 +91,7 @@ public class PropertyOpsDbContext : DbContext
 
             entity.HasIndex(x => new { x.PipelineName, x.StartedAtUtc });
         });
-
+        
         modelBuilder.Entity<DataQualityError>(entity =>
         {
             entity.Property(x => x.SourceRecordId).HasMaxLength(100).IsRequired();
@@ -101,5 +103,53 @@ public class PropertyOpsDbContext : DbContext
                 .HasForeignKey(x => x.PipelineRunId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
+        modelBuilder.Entity<CorrectionSuggestion>(entity =>
+{
+    entity.Property(x => x.FieldName)
+        .HasMaxLength(100)
+        .IsRequired();
+
+    entity.Property(x => x.OriginalValue)
+        .HasMaxLength(500)
+        .IsRequired();
+
+    entity.Property(x => x.SuggestedValue)
+        .HasMaxLength(500);
+
+    entity.Property(x => x.Confidence)
+        .HasPrecision(5, 4);
+
+    entity.Property(x => x.Reason)
+        .HasMaxLength(1000)
+        .IsRequired();
+
+    entity.Property(x => x.Status)
+        .HasMaxLength(30)
+        .IsRequired();
+
+    entity.Property(x => x.ModelName)
+        .HasMaxLength(100)
+        .IsRequired();
+
+    entity.Property(x => x.PromptVersion)
+        .HasMaxLength(30)
+        .IsRequired();
+
+    entity.Property(x => x.ReviewedBy)
+        .HasMaxLength(150);
+
+    entity.Property(x => x.ReviewerNotes)
+        .HasMaxLength(1000);
+
+    entity.HasIndex(x => new { x.Status, x.CreatedAtUtc });
+    
+    entity.HasIndex(x => x.DataQualityErrorId)
+        .IsUnique();
+    entity.HasOne(x => x.DataQualityError)
+        .WithMany(x => x.CorrectionSuggestions)
+        .HasForeignKey(x => x.DataQualityErrorId)
+        .OnDelete(DeleteBehavior.Cascade);
+        });
+        
     }
 }
