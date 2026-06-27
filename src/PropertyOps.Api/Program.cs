@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using PropertyOps.Api.Data;
 using Scalar.AspNetCore;
 using PropertyOps.Api.Services;
+using OpenAI.Chat;
 
 var builder = WebApplication.CreateBuilder(args);
 const string DashboardCorsPolicy = "DashboardClient";
@@ -37,6 +38,25 @@ builder.Services.AddDbContext<PropertyOpsDbContext>(options =>
         )
     )
 );
+
+builder.Services.AddSingleton<ChatClient>(serviceProvider =>
+{
+    var configuration = serviceProvider.GetRequiredService<IConfiguration>();
+
+    var apiKey = configuration["OpenAI:ApiKey"];
+
+    if (string.IsNullOrWhiteSpace(apiKey))
+    {
+        throw new InvalidOperationException(
+            "OpenAI API key was not found. Configure OpenAI:ApiKey."
+        );
+    }
+
+    return new ChatClient(
+        model: "gpt-4o-mini",
+        apiKey: apiKey
+    );
+}); 
 
 builder.Services.AddScoped<LeasingIngestionService>();  // why????????
 
