@@ -1,0 +1,20 @@
+export type CorrectionSuggestion = {
+  id: number;
+  dataQualityErrorId: number;
+  sourceRecordId: string;
+  fieldName: string;
+  originalValue: string;
+  suggestedValue: string | null;
+  confidence: number;
+  reason: string;
+  status: string;
+  modelName: string;
+  promptVersion: string;
+  createdAtUtc: string;
+  reviewedAtUtc: string | null;
+  reviewedBy: string | null;
+  reviewerNotes: string | null;
+  appliedAtUtc: string | null;
+  appliedBy: string | null;
+  appliedLeaseId: number | null;
+};

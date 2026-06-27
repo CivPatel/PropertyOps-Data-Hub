@@ -15,12 +15,17 @@ public record CorrectionSuggestionResponse(
     DateTime CreatedAtUtc,
     DateTime? ReviewedAtUtc,
     string? ReviewedBy,
-    string? ReviewerNotes
+    string? ReviewerNotes,
+    DateTime? AppliedAtUtc,
+    string? AppliedBy,
+    int? AppliedLeaseId
 );
+
 public record ReviewCorrectionSuggestionRequest(
     string ReviewerName,
     string? ReviewerNotes
 );
+
 public record ApplyCorrectionSuggestionRequest(
     string AppliedBy,
     string? Notes

@@ -6,6 +6,7 @@ import type {
   Property,
   PropertyPerformance,
 } from "./types";
+import type { CorrectionSuggestion } from "./aiCorrectionTypes";
 
 const apiBaseUrl = (
   import.meta.env.VITE_API_BASE_URL ??
@@ -17,6 +18,7 @@ async function get<T>(path: string): Promise<T> {
 
   if (!response.ok) {
     const detail = await response.text();
+
     throw new Error(
       `Request failed (${response.status}). ${detail || "Please try again."}`
     );
@@ -43,4 +45,8 @@ export const propertyOpsApi = {
     get<MaintenanceAlert[]>("/api/dashboard/maintenance-alerts"),
 
   getPipelineRuns: () => get<PipelineRun[]>("/api/pipeline-runs?limit=5"),
+
+  getCorrectionSuggestions: () =>
+  get<CorrectionSuggestion[]>("/api/correction-suggestions"),
+  
 };

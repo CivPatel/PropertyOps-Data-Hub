@@ -23,7 +23,7 @@ public class CorrectionSuggestionsController : ControllerBase
 
     [HttpGet]
     public async Task<ActionResult<List<CorrectionSuggestionResponse>>> GetAll(
-        [FromQuery] string? status = "PendingReview",
+        [FromQuery] string? status = null,
         [FromQuery] int limit = 50,
         CancellationToken cancellationToken = default)
     {
@@ -56,7 +56,10 @@ public class CorrectionSuggestionsController : ControllerBase
                 item.CreatedAtUtc,
                 item.ReviewedAtUtc,
                 item.ReviewedBy,
-                item.ReviewerNotes
+                item.ReviewerNotes,
+                item.AppliedAtUtc,
+                item.AppliedBy,
+                item.AppliedLeaseId
             ))
             .ToListAsync(cancellationToken);
 
@@ -86,7 +89,10 @@ public class CorrectionSuggestionsController : ControllerBase
                 item.CreatedAtUtc,
                 item.ReviewedAtUtc,
                 item.ReviewedBy,
-                item.ReviewerNotes
+                item.ReviewerNotes,
+                item.AppliedAtUtc,
+                item.AppliedBy,
+                item.AppliedLeaseId
             ))
             .FirstOrDefaultAsync(cancellationToken);
 
@@ -212,7 +218,10 @@ public class CorrectionSuggestionsController : ControllerBase
             suggestion.CreatedAtUtc,
             suggestion.ReviewedAtUtc,
             suggestion.ReviewedBy,
-            suggestion.ReviewerNotes
+            suggestion.ReviewerNotes,
+            suggestion.AppliedAtUtc,
+            suggestion.AppliedBy,
+            suggestion.AppliedLeaseId
         ));
     }
 }
