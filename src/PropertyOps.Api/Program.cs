@@ -4,7 +4,21 @@ using Scalar.AspNetCore;
 using PropertyOps.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+const string DashboardCorsPolicy = "DashboardClient";
 
+builder.Services.AddControllers();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(DashboardCorsPolicy, policy => //add react 
+    {
+        policy.WithOrigins(
+                "http://localhost:5173",
+                "http://127.0.0.1:5173"
+            )
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
 builder.Services.AddControllers();
 
 builder.Services.AddOpenApi();
@@ -34,6 +48,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseCors(DashboardCorsPolicy); //react
 
 app.MapGet("/health", async (
     PropertyOpsDbContext db,
