@@ -2,7 +2,7 @@
 
 A cloud-hosted backend and data-engineering platform that simulates how a multifamily real-estate company can consolidate leasing, construction, and maintenance data into a single operational source of truth.
 
-Built with ASP.NET Core, SQL Server, Azure App Service, Azure SQL Database, Docker and EF Core,
+Built with ASP.NET Core, SQL Server, Azure App Service, Azure SQL Database and Docker.
 
 ## Business Problem
 
