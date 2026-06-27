@@ -73,301 +73,310 @@ public class LeasingIngestionService
             var headerMap = BuildHeaderMap(rows[0]);
             ValidateRequiredColumns(headerMap);
 
-            var properties = (await _db.Properties
-                .AsNoTracking()
-                .ToListAsync(cancellationToken))
-                .ToDictionary(
-                    property => property.PropertyCode,
-                    StringComparer.OrdinalIgnoreCase
-                );
+            var executionStrategy = _db.Database.CreateExecutionStrategy();
 
-            var existingLeases = (await _db.Leases
-                .ToListAsync(cancellationToken))
-                .ToDictionary(
-                    lease => lease.ExternalLeaseId,
-                    StringComparer.OrdinalIgnoreCase
-                );
-
-            var leaseIdsInThisFile = new HashSet<string>(
-                StringComparer.OrdinalIgnoreCase
-            );
-
-            await using var transaction =
-                await _db.Database.BeginTransactionAsync(cancellationToken);
-
-            for (var rowIndex = 1; rowIndex < rows.Count; rowIndex++)
+            return await executionStrategy.ExecuteAsync(async () =>
             {
-                var row = rows[rowIndex];
-                var sourceRowNumber = rowIndex + 1;
+                var properties = (await _db.Properties
+                    .AsNoTracking()
+                    .ToListAsync(cancellationToken))
+                    .ToDictionary(
+                        property => property.PropertyCode,
+                        StringComparer.OrdinalIgnoreCase
+                    );
 
-                pipelineRun.RecordsReceived++;
+                var existingLeases = (await _db.Leases
+                    .ToListAsync(cancellationToken))
+                    .ToDictionary(
+                        lease => lease.ExternalLeaseId,
+                        StringComparer.OrdinalIgnoreCase
+                    );
 
-                var externalLeaseId = GetValue(
-                    row, headerMap, "externalLeaseId");
-
-                var propertyCode = GetValue(
-                    row, headerMap, "propertyCode");
-
-                var unitNumber = GetValue(
-                    row, headerMap, "unitNumber");
-
-                var residentName = GetValue(
-                    row, headerMap, "residentName");
-
-                var monthlyRentText = GetValue(
-                    row, headerMap, "monthlyRent");
-
-                var status = GetValue(
-                    row, headerMap, "status");
-
-                var leaseStartDateText = GetValue(
-                    row, headerMap, "leaseStartDate");
-
-                var leaseEndDateText = GetValue(
-                    row, headerMap, "leaseEndDate");
-
-                var moveInDateText = GetValue(
-                    row, headerMap, "moveInDate");
-
-                var moveOutDateText = GetValue(
-                    row, headerMap, "moveOutDate");
-
-                var validationErrors = new List<ImportValidationError>();
-
-                if (string.IsNullOrWhiteSpace(externalLeaseId))
-                {
-                    validationErrors.Add(new(
-                        "externalLeaseId",
-                        "External lease ID is required."
-                    ));
-                }
-                else if (!leaseIdsInThisFile.Add(externalLeaseId))
-                {
-                    validationErrors.Add(new(
-                        "externalLeaseId",
-                        "Duplicate external lease ID found in this file."
-                    ));
-                }
-
-                if (string.IsNullOrWhiteSpace(propertyCode))
-                {
-                    validationErrors.Add(new(
-                        "propertyCode",
-                        "Property code is required."
-                    ));
-                }
-                else if (!properties.TryGetValue(propertyCode, out _))
-                {
-                    validationErrors.Add(new(
-                        "propertyCode",
-                        $"Property code '{propertyCode}' does not exist."
-                    ));
-                }
-
-                if (string.IsNullOrWhiteSpace(unitNumber))
-                {
-                    validationErrors.Add(new(
-                        "unitNumber",
-                        "Unit number is required."
-                    ));
-                }
-
-                if (string.IsNullOrWhiteSpace(residentName))
-                {
-                    validationErrors.Add(new(
-                        "residentName",
-                        "Resident name is required."
-                    ));
-                }
-
-                if (string.IsNullOrWhiteSpace(status))
-                {
-                    validationErrors.Add(new(
-                        "status",
-                        "Lease status is required."
-                    ));
-                }
-
-                var monthlyRentIsValid = decimal.TryParse(
-                    monthlyRentText,
-                    NumberStyles.Number,
-                    CultureInfo.InvariantCulture,
-                    out var monthlyRent
+                var leaseIdsInThisFile = new HashSet<string>(
+                    StringComparer.OrdinalIgnoreCase
                 );
 
-                if (!monthlyRentIsValid || monthlyRent < 0)
+                pipelineRun.RecordsReceived = 0;
+                pipelineRun.RecordsLoaded = 0;
+                pipelineRun.RecordsRejected = 0;
+
+                await using var transaction =
+                    await _db.Database.BeginTransactionAsync(cancellationToken);
+
+                for (var rowIndex = 1; rowIndex < rows.Count; rowIndex++)
                 {
-                    validationErrors.Add(new(
-                        "monthlyRent",
-                        "Monthly rent must be a non-negative number."
-                    ));
-                }
+                    var row = rows[rowIndex];
+                    var sourceRowNumber = rowIndex + 1;
 
-                var leaseStartDateIsValid = DateTime.TryParse(
-                    leaseStartDateText,
-                    CultureInfo.InvariantCulture,
-                    DateTimeStyles.None,
-                    out var leaseStartDate
-                );
+                    pipelineRun.RecordsReceived++;
 
-                if (!leaseStartDateIsValid)
-                {
-                    validationErrors.Add(new(
-                        "leaseStartDate",
-                        "Lease start date is invalid."
-                    ));
-                }
+                    var externalLeaseId = GetValue(
+                        row, headerMap, "externalLeaseId");
 
-                var leaseEndDateIsValid = DateTime.TryParse(
-                    leaseEndDateText,
-                    CultureInfo.InvariantCulture,
-                    DateTimeStyles.None,
-                    out var leaseEndDate
-                );
+                    var propertyCode = GetValue(
+                        row, headerMap, "propertyCode");
 
-                if (!leaseEndDateIsValid)
-                {
-                    validationErrors.Add(new(
-                        "leaseEndDate",
-                        "Lease end date is invalid."
-                    ));
-                }
+                    var unitNumber = GetValue(
+                        row, headerMap, "unitNumber");
 
-                DateTime? moveInDate = null;
+                    var residentName = GetValue(
+                        row, headerMap, "residentName");
 
-                if (!string.IsNullOrWhiteSpace(moveInDateText))
-                {
-                    if (DateTime.TryParse(
-                        moveInDateText,
-                        CultureInfo.InvariantCulture,
-                        DateTimeStyles.None,
-                        out var parsedMoveInDate))
-                    {
-                        moveInDate = parsedMoveInDate;
-                    }
-                    else
+                    var monthlyRentText = GetValue(
+                        row, headerMap, "monthlyRent");
+
+                    var status = GetValue(
+                        row, headerMap, "status");
+
+                    var leaseStartDateText = GetValue(
+                        row, headerMap, "leaseStartDate");
+
+                    var leaseEndDateText = GetValue(
+                        row, headerMap, "leaseEndDate");
+
+                    var moveInDateText = GetValue(
+                        row, headerMap, "moveInDate");
+
+                    var moveOutDateText = GetValue(
+                        row, headerMap, "moveOutDate");
+
+                    var validationErrors = new List<ImportValidationError>();
+
+                    if (string.IsNullOrWhiteSpace(externalLeaseId))
                     {
                         validationErrors.Add(new(
-                            "moveInDate",
-                            "Move-in date is invalid."
+                            "externalLeaseId",
+                            "External lease ID is required."
                         ));
                     }
-                }
+                    else if (!leaseIdsInThisFile.Add(externalLeaseId))
+                    {
+                        validationErrors.Add(new(
+                            "externalLeaseId",
+                            "Duplicate external lease ID found in this file."
+                        ));
+                    }
 
-                DateTime? moveOutDate = null;
+                    if (string.IsNullOrWhiteSpace(propertyCode))
+                    {
+                        validationErrors.Add(new(
+                            "propertyCode",
+                            "Property code is required."
+                        ));
+                    }
+                    else if (!properties.TryGetValue(propertyCode, out _))
+                    {
+                        validationErrors.Add(new(
+                            "propertyCode",
+                            $"Property code '{propertyCode}' does not exist."
+                        ));
+                    }
 
-                if (!string.IsNullOrWhiteSpace(moveOutDateText))
-                {
-                    if (DateTime.TryParse(
-                        moveOutDateText,
+                    if (string.IsNullOrWhiteSpace(unitNumber))
+                    {
+                        validationErrors.Add(new(
+                            "unitNumber",
+                            "Unit number is required."
+                        ));
+                    }
+
+                    if (string.IsNullOrWhiteSpace(residentName))
+                    {
+                        validationErrors.Add(new(
+                            "residentName",
+                            "Resident name is required."
+                        ));
+                    }
+
+                    if (string.IsNullOrWhiteSpace(status))
+                    {
+                        validationErrors.Add(new(
+                            "status",
+                            "Lease status is required."
+                        ));
+                    }
+
+                    var monthlyRentIsValid = decimal.TryParse(
+                        monthlyRentText,
+                        NumberStyles.Number,
+                        CultureInfo.InvariantCulture,
+                        out var monthlyRent
+                    );
+
+                    if (!monthlyRentIsValid || monthlyRent < 0)
+                    {
+                        validationErrors.Add(new(
+                            "monthlyRent",
+                            "Monthly rent must be a non-negative number."
+                        ));
+                    }
+
+                    var leaseStartDateIsValid = DateTime.TryParse(
+                        leaseStartDateText,
                         CultureInfo.InvariantCulture,
                         DateTimeStyles.None,
-                        out var parsedMoveOutDate))
+                        out var leaseStartDate
+                    );
+
+                    if (!leaseStartDateIsValid)
                     {
-                        moveOutDate = parsedMoveOutDate;
+                        validationErrors.Add(new(
+                            "leaseStartDate",
+                            "Lease start date is invalid."
+                        ));
                     }
-                    else
+
+                    var leaseEndDateIsValid = DateTime.TryParse(
+                        leaseEndDateText,
+                        CultureInfo.InvariantCulture,
+                        DateTimeStyles.None,
+                        out var leaseEndDate
+                    );
+
+                    if (!leaseEndDateIsValid)
+                    {
+                        validationErrors.Add(new(
+                            "leaseEndDate",
+                            "Lease end date is invalid."
+                        ));
+                    }
+
+                    DateTime? moveInDate = null;
+
+                    if (!string.IsNullOrWhiteSpace(moveInDateText))
+                    {
+                        if (DateTime.TryParse(
+                            moveInDateText,
+                            CultureInfo.InvariantCulture,
+                            DateTimeStyles.None,
+                            out var parsedMoveInDate))
+                        {
+                            moveInDate = parsedMoveInDate;
+                        }
+                        else
+                        {
+                            validationErrors.Add(new(
+                                "moveInDate",
+                                "Move-in date is invalid."
+                            ));
+                        }
+                    }
+
+                    DateTime? moveOutDate = null;
+
+                    if (!string.IsNullOrWhiteSpace(moveOutDateText))
+                    {
+                        if (DateTime.TryParse(
+                            moveOutDateText,
+                            CultureInfo.InvariantCulture,
+                            DateTimeStyles.None,
+                            out var parsedMoveOutDate))
+                        {
+                            moveOutDate = parsedMoveOutDate;
+                        }
+                        else
+                        {
+                            validationErrors.Add(new(
+                                "moveOutDate",
+                                "Move-out date is invalid."
+                            ));
+                        }
+                    }
+
+                    if (leaseStartDateIsValid &&
+                        leaseEndDateIsValid &&
+                        leaseEndDate < leaseStartDate)
+                    {
+                        validationErrors.Add(new(
+                            "leaseEndDate",
+                            "Lease end date cannot be before lease start date."
+                        ));
+                    }
+
+                    if (moveInDate.HasValue &&
+                        moveOutDate.HasValue &&
+                        moveOutDate < moveInDate)
                     {
                         validationErrors.Add(new(
                             "moveOutDate",
-                            "Move-out date is invalid."
+                            "Move-out date cannot be before move-in date."
                         ));
                     }
-                }
 
-                if (leaseStartDateIsValid &&
-                    leaseEndDateIsValid &&
-                    leaseEndDate < leaseStartDate)
-                {
-                    validationErrors.Add(new(
-                        "leaseEndDate",
-                        "Lease end date cannot be before lease start date."
-                    ));
-                }
-
-                if (moveInDate.HasValue &&
-                    moveOutDate.HasValue &&
-                    moveOutDate < moveInDate)
-                {
-                    validationErrors.Add(new(
-                        "moveOutDate",
-                        "Move-out date cannot be before move-in date."
-                    ));
-                }
-
-                if (validationErrors.Count > 0)
-                {
-                    pipelineRun.RecordsRejected++;
-
-                    foreach (var error in validationErrors)
+                    if (validationErrors.Count > 0)
                     {
-                        _db.DataQualityErrors.Add(new DataQualityError
+                        pipelineRun.RecordsRejected++;
+
+                        foreach (var error in validationErrors)
                         {
-                            PipelineRunId = pipelineRun.Id,
-                            SourceRecordId = string.IsNullOrWhiteSpace(externalLeaseId)
-                                ? $"CSV row {sourceRowNumber}"
-                                : externalLeaseId,
-                            FieldName = error.FieldName,
-                            ErrorMessage = error.Message,
-                            RawData = string.Join(",", row),
-                            CreatedAtUtc = DateTime.UtcNow
-                        });
+                            _db.DataQualityErrors.Add(new DataQualityError
+                            {
+                                PipelineRunId = pipelineRun.Id,
+                                SourceRecordId = string.IsNullOrWhiteSpace(externalLeaseId)
+                                    ? $"CSV row {sourceRowNumber}"
+                                    : externalLeaseId,
+                                FieldName = error.FieldName,
+                                ErrorMessage = error.Message,
+                                RawData = string.Join(",", row),
+                                CreatedAtUtc = DateTime.UtcNow
+                            });
+                        }
+
+                        continue;
                     }
 
-                    continue;
-                }
+                    var property = properties[propertyCode];
 
-                var property = properties[propertyCode];
-
-                if (existingLeases.TryGetValue(
-                    externalLeaseId,
-                    out var existingLease))
-                {
-                    existingLease.PropertyId = property.Id;
-                    existingLease.UnitNumber = unitNumber;
-                    existingLease.ResidentName = residentName;
-                    existingLease.MonthlyRent = monthlyRent;
-                    existingLease.Status = status;
-                    existingLease.LeaseStartDate = leaseStartDate;
-                    existingLease.LeaseEndDate = leaseEndDate;
-                    existingLease.MoveInDate = moveInDate;
-                    existingLease.MoveOutDate = moveOutDate;
-                }
-                else
-                {
-                    var newLease = new Lease
+                    if (existingLeases.TryGetValue(
+                        externalLeaseId,
+                        out var existingLease))
                     {
-                        ExternalLeaseId = externalLeaseId,
-                        PropertyId = property.Id,
-                        UnitNumber = unitNumber,
-                        ResidentName = residentName,
-                        MonthlyRent = monthlyRent,
-                        Status = status,
-                        LeaseStartDate = leaseStartDate,
-                        LeaseEndDate = leaseEndDate,
-                        MoveInDate = moveInDate,
-                        MoveOutDate = moveOutDate
-                    };
+                        existingLease.PropertyId = property.Id;
+                        existingLease.UnitNumber = unitNumber;
+                        existingLease.ResidentName = residentName;
+                        existingLease.MonthlyRent = monthlyRent;
+                        existingLease.Status = status;
+                        existingLease.LeaseStartDate = leaseStartDate;
+                        existingLease.LeaseEndDate = leaseEndDate;
+                        existingLease.MoveInDate = moveInDate;
+                        existingLease.MoveOutDate = moveOutDate;
+                    }
+                    else
+                    {
+                        var newLease = new Lease
+                        {
+                            ExternalLeaseId = externalLeaseId,
+                            PropertyId = property.Id,
+                            UnitNumber = unitNumber,
+                            ResidentName = residentName,
+                            MonthlyRent = monthlyRent,
+                            Status = status,
+                            LeaseStartDate = leaseStartDate,
+                            LeaseEndDate = leaseEndDate,
+                            MoveInDate = moveInDate,
+                            MoveOutDate = moveOutDate
+                        };
 
-                    _db.Leases.Add(newLease);
-                    existingLeases[externalLeaseId] = newLease;
+                        _db.Leases.Add(newLease);
+                        existingLeases[externalLeaseId] = newLease;
+                    }
+
+                    pipelineRun.RecordsLoaded++;
                 }
 
-                pipelineRun.RecordsLoaded++;
-            }
+                await _db.SaveChangesAsync(cancellationToken);
 
-            await _db.SaveChangesAsync(cancellationToken);
+                pipelineRun.Status = pipelineRun.RecordsRejected > 0
+                    ? "CompletedWithErrors"
+                    : "Completed";
 
-            pipelineRun.Status = pipelineRun.RecordsRejected > 0
-                ? "CompletedWithErrors"
-                : "Completed";
+                pipelineRun.FinishedAtUtc = DateTime.UtcNow;
 
-            pipelineRun.FinishedAtUtc = DateTime.UtcNow;
+                await _db.SaveChangesAsync(cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
 
-            await _db.SaveChangesAsync(cancellationToken);
-            await transaction.CommitAsync(cancellationToken);
-
-            return ToResponse(pipelineRun);
+                return ToResponse(pipelineRun);
+            });
         }
         catch (Exception exception)
         {
