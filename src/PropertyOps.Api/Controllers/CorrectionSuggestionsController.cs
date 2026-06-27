@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PropertyOps.Api.Data;
@@ -12,13 +14,16 @@ public class CorrectionSuggestionsController : ControllerBase
 {
     private readonly PropertyOpsDbContext _db;
     private readonly ApprovedCorrectionApplicationService _applicationService;
+    private readonly IConfiguration _configuration;
 
     public CorrectionSuggestionsController(
         PropertyOpsDbContext db,
-        ApprovedCorrectionApplicationService applicationService)
+        ApprovedCorrectionApplicationService applicationService,
+        IConfiguration configuration)
     {
         _db = db;
         _applicationService = applicationService;
+        _configuration = configuration;
     }
 
     [HttpGet]
@@ -111,8 +116,17 @@ public class CorrectionSuggestionsController : ControllerBase
     public async Task<ActionResult<CorrectionSuggestionResponse>> Approve(
         int id,
         ReviewCorrectionSuggestionRequest request,
+        [FromHeader(Name = "X-AI-Review-Key")] string? aiReviewKey,
         CancellationToken cancellationToken)
     {
+        if (!HasValidAiReviewKey(aiReviewKey))
+        {
+            return Unauthorized(new
+            {
+                message = "A valid X-AI-Review-Key header is required."
+            });
+        }
+
         return await ReviewAsync(id, request, "Approved", cancellationToken);
     }
 
@@ -120,8 +134,17 @@ public class CorrectionSuggestionsController : ControllerBase
     public async Task<ActionResult<CorrectionSuggestionResponse>> Reject(
         int id,
         ReviewCorrectionSuggestionRequest request,
+        [FromHeader(Name = "X-AI-Review-Key")] string? aiReviewKey,
         CancellationToken cancellationToken)
     {
+        if (!HasValidAiReviewKey(aiReviewKey))
+        {
+            return Unauthorized(new
+            {
+                message = "A valid X-AI-Review-Key header is required."
+            });
+        }
+
         return await ReviewAsync(id, request, "Rejected", cancellationToken);
     }
 
@@ -129,8 +152,17 @@ public class CorrectionSuggestionsController : ControllerBase
     public async Task<IActionResult> Apply(
         int id,
         ApplyCorrectionSuggestionRequest request,
+        [FromHeader(Name = "X-AI-Review-Key")] string? aiReviewKey,
         CancellationToken cancellationToken)
     {
+        if (!HasValidAiReviewKey(aiReviewKey))
+        {
+            return Unauthorized(new
+            {
+                message = "A valid X-AI-Review-Key header is required."
+            });
+        }
+
         try
         {
             var suggestion = await _applicationService.ApplyAsync(
@@ -192,7 +224,8 @@ public class CorrectionSuggestionsController : ControllerBase
         {
             return Conflict(new
             {
-                message = $"Only PendingReview suggestions can be reviewed. Current status: {suggestion.Status}."
+                message =
+                    $"Only PendingReview suggestions can be reviewed. Current status: {suggestion.Status}."
             });
         }
 
@@ -223,5 +256,21 @@ public class CorrectionSuggestionsController : ControllerBase
             suggestion.AppliedBy,
             suggestion.AppliedLeaseId
         ));
+    }
+
+    private bool HasValidAiReviewKey(string? providedKey)
+    {
+        var expectedKey = _configuration["AIReview:AdminKey"];
+
+        if (string.IsNullOrWhiteSpace(expectedKey) ||
+            string.IsNullOrWhiteSpace(providedKey))
+        {
+            return false;
+        }
+
+        return CryptographicOperations.FixedTimeEquals(
+            Encoding.UTF8.GetBytes(providedKey),
+            Encoding.UTF8.GetBytes(expectedKey)
+        );
     }
 }
