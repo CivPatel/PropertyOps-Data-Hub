@@ -143,6 +143,14 @@ public class PropertyOpsDbContext : DbContext
 
     entity.HasIndex(x => new { x.Status, x.CreatedAtUtc });
     
+    entity.Property(x => x.AppliedBy)
+    .HasMaxLength(150);
+
+    entity.HasOne<Lease>()
+    .WithMany()
+    .HasForeignKey(x => x.AppliedLeaseId)
+    .OnDelete(DeleteBehavior.SetNull);
+
     entity.HasIndex(x => x.DataQualityErrorId)
         .IsUnique();
     entity.HasOne(x => x.DataQualityError)

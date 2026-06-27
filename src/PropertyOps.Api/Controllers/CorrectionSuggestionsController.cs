@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PropertyOps.Api.Data;
 using PropertyOps.Api.Dtos;
+using PropertyOps.Api.Services;
 
 namespace PropertyOps.Api.Controllers;
 
@@ -10,10 +11,14 @@ namespace PropertyOps.Api.Controllers;
 public class CorrectionSuggestionsController : ControllerBase
 {
     private readonly PropertyOpsDbContext _db;
+    private readonly ApprovedCorrectionApplicationService _applicationService;
 
-    public CorrectionSuggestionsController(PropertyOpsDbContext db)
+    public CorrectionSuggestionsController(
+        PropertyOpsDbContext db,
+        ApprovedCorrectionApplicationService applicationService)
     {
         _db = db;
+        _applicationService = applicationService;
     }
 
     [HttpGet]
@@ -30,29 +35,28 @@ public class CorrectionSuggestionsController : ControllerBase
 
         if (!string.IsNullOrWhiteSpace(status))
         {
-            query = query.Where(suggestion =>
-                suggestion.Status == status.Trim());
+            query = query.Where(item => item.Status == status.Trim());
         }
 
         var suggestions = await query
-            .OrderByDescending(suggestion => suggestion.CreatedAtUtc)
+            .OrderByDescending(item => item.CreatedAtUtc)
             .Take(limit)
-            .Select(suggestion => new CorrectionSuggestionResponse(
-                suggestion.Id,
-                suggestion.DataQualityErrorId,
-                suggestion.DataQualityError!.SourceRecordId,
-                suggestion.FieldName,
-                suggestion.OriginalValue,
-                suggestion.SuggestedValue,
-                suggestion.Confidence,
-                suggestion.Reason,
-                suggestion.Status,
-                suggestion.ModelName,
-                suggestion.PromptVersion,
-                suggestion.CreatedAtUtc,
-                suggestion.ReviewedAtUtc,
-                suggestion.ReviewedBy,
-                suggestion.ReviewerNotes
+            .Select(item => new CorrectionSuggestionResponse(
+                item.Id,
+                item.DataQualityErrorId,
+                item.DataQualityError!.SourceRecordId,
+                item.FieldName,
+                item.OriginalValue,
+                item.SuggestedValue,
+                item.Confidence,
+                item.Reason,
+                item.Status,
+                item.ModelName,
+                item.PromptVersion,
+                item.CreatedAtUtc,
+                item.ReviewedAtUtc,
+                item.ReviewedBy,
+                item.ReviewerNotes
             ))
             .ToListAsync(cancellationToken);
 
@@ -103,11 +107,7 @@ public class CorrectionSuggestionsController : ControllerBase
         ReviewCorrectionSuggestionRequest request,
         CancellationToken cancellationToken)
     {
-        return await ReviewAsync(
-            id,
-            request,
-            "Approved",
-            cancellationToken);
+        return await ReviewAsync(id, request, "Approved", cancellationToken);
     }
 
     [HttpPost("{id:int}/reject")]
@@ -116,11 +116,41 @@ public class CorrectionSuggestionsController : ControllerBase
         ReviewCorrectionSuggestionRequest request,
         CancellationToken cancellationToken)
     {
-        return await ReviewAsync(
-            id,
-            request,
-            "Rejected",
-            cancellationToken);
+        return await ReviewAsync(id, request, "Rejected", cancellationToken);
+    }
+
+    [HttpPost("{id:int}/apply")]
+    public async Task<IActionResult> Apply(
+        int id,
+        ApplyCorrectionSuggestionRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var suggestion = await _applicationService.ApplyAsync(
+                id,
+                request.AppliedBy,
+                cancellationToken
+            );
+
+            return Ok(new
+            {
+                message = "Approved correction was applied successfully.",
+                suggestionId = suggestion.Id,
+                suggestion.Status,
+                suggestion.AppliedLeaseId,
+                suggestion.AppliedAtUtc,
+                suggestion.AppliedBy
+            });
+        }
+        catch (KeyNotFoundException exception)
+        {
+            return NotFound(new { message = exception.Message });
+        }
+        catch (InvalidOperationException exception)
+        {
+            return Conflict(new { message = exception.Message });
+        }
     }
 
     private async Task<ActionResult<CorrectionSuggestionResponse>> ReviewAsync(
@@ -141,7 +171,8 @@ public class CorrectionSuggestionsController : ControllerBase
             .Include(item => item.DataQualityError)
             .FirstOrDefaultAsync(
                 item => item.Id == id,
-                cancellationToken);
+                cancellationToken
+            );
 
         if (suggestion is null)
         {

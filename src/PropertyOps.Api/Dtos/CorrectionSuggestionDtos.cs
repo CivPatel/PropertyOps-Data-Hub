@@ -17,8 +17,11 @@ public record CorrectionSuggestionResponse(
     string? ReviewedBy,
     string? ReviewerNotes
 );
-
 public record ReviewCorrectionSuggestionRequest(
     string ReviewerName,
     string? ReviewerNotes
+);
+public record ApplyCorrectionSuggestionRequest(
+    string AppliedBy,
+    string? Notes
 );

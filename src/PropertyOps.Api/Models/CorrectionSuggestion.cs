@@ -32,4 +32,7 @@ public class CorrectionSuggestion
     public string? ReviewedBy { get; set; }
 
     public string? ReviewerNotes { get; set; }
+    public DateTime? AppliedAtUtc { get; set; }
+    public string? AppliedBy { get; set; }
+    public int? AppliedLeaseId { get; set; }
 }

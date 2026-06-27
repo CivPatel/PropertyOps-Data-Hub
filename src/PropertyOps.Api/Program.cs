@@ -9,6 +9,7 @@ const string DashboardCorsPolicy = "DashboardClient";
 
 builder.Services.AddScoped<AiCorrectionService>();
 builder.Services.AddControllers();
+builder.Services.AddScoped<ApprovedCorrectionApplicationService>();
 
 builder.Services.AddCors(options =>
 {
