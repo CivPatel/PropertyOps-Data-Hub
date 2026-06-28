@@ -1,5 +1,39 @@
+# Environment files and local secrets
 .env
+.env.*
+!.env.example
+
+**/.env
+**/.env.*
+!**/.env.example
+
+# Local-only application settings
+appsettings.Local.json
+appsettings.Development.local.json
+**/appsettings.Local.json
+**/appsettings.Development.local.json
+
+# Certificates and private keys
+*.pem
+*.key
+*.pfx
+*.p12
+
+# Local test/demo files
+tmp/
+
+# Build output and dependencies
 bin/
 obj/
 .vs/
-.env
+**/bin/
+**/obj/
+**/node_modules/
+**/dist/
+
+# IDE and OS files
+.idea/
+*.user
+*.suo
+*.swp
+.DS_Store
