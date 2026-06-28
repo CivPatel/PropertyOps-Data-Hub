@@ -163,19 +163,6 @@ Example response:
 * Git
 * SQL Server running through Docker Compose
 
-## Screenshots
-
-Add screenshots here after saving them inside a `docs/images` folder.
-
-Suggested screenshots:
-
-```text
-docs/images/health-check.png
-docs/images/pipeline-run.png
-docs/images/data-quality-errors.png
-docs/images/portfolio-summary.png
-docs/images/construction-risk.png
-```
 
 ## Interview Talking Points
 
