@@ -163,11 +163,6 @@ Example response:
 * Git
 * SQL Server running through Docker Compose
 
-
-## Interview Talking Points
-
-> I built and deployed a cloud-hosted property operations data platform using ASP.NET Core, Azure App Service, and Azure SQL Database. The platform ingests leasing CSV data, validates business rules, upserts valid leases, logs rejected source records, and tracks pipeline history. I created SQL Server stored procedures for occupancy, rent, construction-risk, and maintenance reporting, then exposed those metrics through REST APIs. I also added Docker support, automated tests, GitHub Actions CI/CD, health monitoring, and retry handling for Azure SQL serverless database connections.
-
 ## Future Improvements
 
 * React dashboard for business users
